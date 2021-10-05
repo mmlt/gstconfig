@@ -1,0 +1,7 @@
+apiVersion: clusterops.mmlt.nl/v1
+kind: GSTConfig
+metadata:
+  name: gstconfig-sample
+spec:
+  # Add fields here
+  foo: bar
