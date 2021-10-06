@@ -34,9 +34,40 @@ type GSTConfigSpec struct {
 
 // GSTConfigStatus defines the observed state of GSTConfig
 type GSTConfigStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Conditions are a synopsis of the StepStates.
+	// +optional
+	Conditions []GSTConfigCondition `json:"conditions,omitempty"`
 }
+
+// GSTConfigCondition provides a synopsis of the current state.
+// See KEP sig-api-machinery/1623-standardize-conditions is going to introduce it as k8s.io/apimachinery/pkg/apis/meta/v1
+type GSTConfigCondition struct {
+	// Type of condition in CamelCase.
+	// +required
+	Type string `json:"type" protobuf:"bytes,1,opt,name=type"`
+	// Status of the condition, one of True, False, Unknown.
+	// +required
+	Status metav1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status"`
+	// Last time the condition transitioned from one status to another.
+	// This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+	// +required
+	LastTransitionTime metav1.Time `json:"lastTransitionTime" protobuf:"bytes,3,opt,name=lastTransitionTime"`
+	// The reason for the condition's last transition in CamelCase.
+	// +required
+	Reason GSTConfigConditionReason `json:"reason" protobuf:"bytes,4,opt,name=reason"`
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
+}
+
+// GSTConfigConditionReason is the reason for the condition change.
+type GSTConfigConditionReason string
+
+const (
+	ReasonRunning GSTConfigConditionReason = "Running"
+	ReasonReady   GSTConfigConditionReason = "Ready"
+	ReasonFailed  GSTConfigConditionReason = "Failed"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

@@ -43,6 +43,42 @@ spec:
             type: object
           status:
             description: GSTConfigStatus defines the observed state of GSTConfig
+            properties:
+              conditions:
+                description: Conditions are a synopsis of the StepStates.
+                items:
+                  description: GSTConfigCondition provides a synopsis of the current
+                    state. See KEP sig-api-machinery/1623-standardize-conditions is
+                    going to introduce it as k8s.io/apimachinery/pkg/apis/meta/v1
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.  If
+                        that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
             type: object
         type: object
     served: true
