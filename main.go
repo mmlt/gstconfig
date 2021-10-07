@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/mmlt/gstconfig/pkg/client/artifactory"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -82,6 +83,9 @@ func main() {
 	r := &controllers.GSTConfigReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		Repo:   &artifactory.Artifactory{
+			//TODO pass config
+		},
 	}
 
 	if err = r.SetupWithManager(mgr); err != nil {

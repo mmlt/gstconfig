@@ -56,7 +56,6 @@ func testGetCRWhenConditionReady(t *testing.T, nsn types.NamespacedName) *cluste
 		if err != nil {
 			return false, err
 		}
-		//TODO enable when CR has status.conditions field
 		for _, c := range obj.Status.Conditions {
 			if c.Type == "Ready" {
 				return c.Status == metav1.ConditionTrue, nil

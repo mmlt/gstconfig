@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/mmlt/gstconfig/controllers"
-
 	//"github.com/go-logr/stdr"
 	clusteropsv1 "github.com/mmlt/gstconfig/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -26,10 +25,9 @@ import (
 
 // TestMain instantiates the following vars for usage in tests.
 var (
-	cfg            *rest.Config
-	k8sClient      client.Client
-	testEnv        *envtest.Environment
-	testReconciler *controllers.GSTConfigReconciler
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
 )
 
 // Tests use the following config.
@@ -97,8 +95,8 @@ func TestMain(m *testing.M) {
 	os.Exit(r)
 }
 
-// TestManagerWithFakeClients starts a Manager with the fake clients.
-func testManagerWithFakeClients(t *testing.T, ctx context.Context) *sync.WaitGroup {
+// TestStartManager starts a Manager with the provided reconciler.
+func testStartManager(t *testing.T, ctx context.Context, reconciler *controllers.GSTConfigReconciler) *sync.WaitGroup {
 	t.Helper()
 
 	// Setup manager (similar to main.go)
@@ -109,13 +107,10 @@ func testManagerWithFakeClients(t *testing.T, ctx context.Context) *sync.WaitGro
 	})
 	mustNotErr("new manager", err)
 
-	testReconciler = &controllers.GSTConfigReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}
-
 	// Add reconciler to manager.
-	err = testReconciler.SetupWithManager(mgr)
+	reconciler.Client = mgr.GetClient()
+	reconciler.Scheme = mgr.GetScheme()
+	err = reconciler.SetupWithManager(mgr)
 	mustNotErr("setup with manager", err)
 
 	// Start manager.
