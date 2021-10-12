@@ -84,8 +84,9 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 		Repo:   &artifactory.Artifactory{
-			//TODO pass config
+			//TODO Pass config (from cli flags)
 		},
+		//TODO set ClusterLabelSelector to match Secret with cluster content; clusterops.mmlt.nl/operator=playgroundenvs
 	}
 
 	if err = r.SetupWithManager(mgr); err != nil {

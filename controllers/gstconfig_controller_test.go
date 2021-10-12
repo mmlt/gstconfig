@@ -26,8 +26,8 @@ func Test_mapSecretsToClusterConfig(t *testing.T) {
 			in: &corev1.SecretList{
 				Items: []corev1.Secret{
 					{
-						StringData: map[string]string{
-							"cluster": mustJSON2String(&clientcmdapi.Cluster{
+						Data: map[string][]byte{
+							"cluster": mustToJSON(&clientcmdapi.Cluster{
 								Server: "https://foo.example.com",
 							}),
 						},
@@ -53,11 +53,11 @@ func Test_mapSecretsToClusterConfig(t *testing.T) {
 	}
 }
 
-// MustJSON2String is a test helper that converts objects to a JSON string.
-func mustJSON2String(in interface{}) string {
+// MustToJSON is a test helper that converts objects to a JSON text.
+func mustToJSON(in interface{}) []byte {
 	out, err := json.Marshal(in)
 	if err != nil {
 		panic(err)
 	}
-	return string(out)
+	return out
 }

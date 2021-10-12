@@ -12,7 +12,7 @@ type ArtifactoryFake struct {
 
 func (a *ArtifactoryFake) Read(ctx context.Context, name string, data *gst.Config) error {
 	a.ReadTally++
-	data = &a.Data
+	*data = a.Data
 
 	return nil
 }

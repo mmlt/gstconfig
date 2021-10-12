@@ -26,6 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/json"
+	"reflect"
+	"sort"
 
 	clusteropsv1 "github.com/mmlt/gstconfig/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -110,14 +112,20 @@ func (r *GSTConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	newState, noChange := diff(currentState, targetState)
-	if noChange {
-		return ctrl.Result{}, r.updateStatusConditions(ctx, cr, noChange, nil)
+	newState, hasChanged := diff(currentState, targetState)
+	msg := fmt.Sprintf("sync %d clusters", len(targetState.Clusters))
+	if !hasChanged {
+		return ctrl.Result{}, r.updateStatusConditions(ctx, cr, true, msg)
+	}
+
+	err = r.updateStatusConditions(ctx, cr, false, msg)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	err = r.Repo.Write(ctx, filename, newState)
 
-	return ctrl.Result{}, r.updateStatusConditions(ctx, cr, noChange, err)
+	return ctrl.Result{}, err
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -128,33 +136,30 @@ func (r *GSTConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // UpdateStatusConditions update CR status.conditions based on 'ready' and 'err' input.
-func (r *GSTConfigReconciler) updateStatusConditions(ctx context.Context, cr *clusteropsv1.GSTConfig, ready bool, err error) error {
+func (r *GSTConfigReconciler) updateStatusConditions(ctx context.Context, cr *clusteropsv1.GSTConfig, ready bool, msg string) error {
 	c := metav1.Condition{Type: "Ready"}
 
-	if err != nil {
-		c.Status = "False"
-		c.Reason = "Error"
-		c.Message = err.Error()
+	if ready {
+		c.Status = "True"
+		c.Reason = "Synced"
 	} else {
-		if ready {
-			c.Status = "True"
-			c.Reason = "Synced"
-		} else {
-			c.Status = "False"
-			c.Reason = "Syncing"
-		}
+		c.Status = "False"
+		c.Reason = "Syncing"
 	}
+	c.Message = msg
+
 	meta.SetStatusCondition(&cr.Status.Conditions, c)
 
 	return r.Status().Update(ctx, cr)
 }
 
-// MapSecretsToClusterConfig takes a list of Secrets containing kubeconfigs and returns a ClusterDefinitions object.
+// MapSecretsToClusterConfig takes a list of Secrets containing kubeconfig like data and returns a ClusterDefinitions
+// object. The clusters are ordered by Endpoint to have deterministic output.
 // A Secret contains a "cluster" and an "authInfo" field with the JSON representations similar to a kube config.
 func mapSecretsToClusterConfig(secrets *corev1.SecretList) (*gst.Config, error) {
 	var endpoints []gst.ClusterEndpoint
 	for _, secret := range secrets.Items {
-		cs, ok := secret.StringData["cluster"]
+		cs, ok := secret.Data["cluster"]
 		if !ok {
 			return nil, fmt.Errorf("Secret %s/%s does not contain a 'cluster' field", secret.Namespace, secret.Name)
 		}
@@ -170,15 +175,25 @@ func mapSecretsToClusterConfig(secrets *corev1.SecretList) (*gst.Config, error) 
 		})
 	}
 
+	// make output deterministic
+	sort.Slice(endpoints, func(i, j int) bool {
+		return endpoints[i].Endpoint < endpoints[j].Endpoint
+	})
+
 	return &gst.Config{
 		Clusters: endpoints,
 	}, nil
 }
 
 // Diff compares the current and target state.
-// It returns true if current == target state or false + a new state if current != target state.
+// It returns false if current == target state or true + a new state if current != target state.
 func diff(current, target *gst.Config) (*gst.Config, bool) {
-	//TODO compare current and target state by endpoints ignoring endpoints with deprecated==true
+	//TODO Complete diff function.
+	// Compare current and target state by endpoints ignoring endpoints with 'deprecated' == true
+	// Keep 'default' field
+	if reflect.DeepEqual(current, target) {
+		return nil, false
+	}
 
 	return target, true
 }

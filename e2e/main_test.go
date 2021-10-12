@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/mmlt/gstconfig/controllers"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
 	//"github.com/go-logr/stdr"
 	clusteropsv1 "github.com/mmlt/gstconfig/api/v1"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -37,29 +40,21 @@ var (
 	// When false the envtest apiserver will be used.
 	useExistingCluster = false
 
-	// AlwaysShowLog true shows log while running.
-	// When false only logs of failed tests are shown.
-	alwaysShowLog = true
-
 	// Namespace and name for test resources.
 	testNSN = types.NamespacedName{
 		Namespace: "default",
 		Name:      "gstc",
 	}
 
+	// TestCtx is used when invoking test clients.
 	testCtx = context.Background()
 )
 
 // TestMain sets-up a test API server, runs tests and tears down the API server.
 func TestMain(m *testing.M) {
-	if alwaysShowLog {
-		//TODO
-		//logf.SetLogger(stdr.New(log.New(os.Stdout, "", log.Lshortfile|log.Ltime)))
-		//stdr.SetVerbosity(5)
-		ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zap.Options{
-			Development: true,
-		})))
-	}
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zap.Options{
+		Development: true,
+	})))
 
 	// Setup.
 	testEnv = &envtest.Environment{
@@ -110,7 +105,14 @@ func testStartManager(t *testing.T, ctx context.Context, reconciler *controllers
 	// Add reconciler to manager.
 	reconciler.Client = mgr.GetClient()
 	reconciler.Scheme = mgr.GetScheme()
-	err = reconciler.SetupWithManager(mgr)
+	// watch CR and Secrets
+	err = ctrl.NewControllerManagedBy(mgr).
+		For(&clusteropsv1.GSTConfig{}).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			&handler.EnqueueRequestForObject{}).
+		Complete(reconciler)
+
 	mustNotErr("setup with manager", err)
 
 	// Start manager.

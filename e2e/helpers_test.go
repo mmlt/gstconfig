@@ -3,6 +3,7 @@ package e2e
 import (
 	clusteropsv1 "github.com/mmlt/gstconfig/api/v1"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -65,4 +66,29 @@ func testGetCRWhenConditionReady(t *testing.T, nsn types.NamespacedName) *cluste
 	})
 	assert.NoError(t, err)
 	return obj
+}
+
+func testCreateSecret(t *testing.T, sc *v1.Secret) {
+	t.Helper()
+
+	nsn := types.NamespacedName{
+		Namespace: sc.Namespace,
+		Name:      sc.Name,
+	}
+	testDeleteSecret(t, nsn)
+	err := k8sClient.Create(testCtx, sc)
+	assert.NoError(t, err)
+}
+
+func testDeleteSecret(t *testing.T, nsn types.NamespacedName) {
+	t.Helper()
+
+	obj := &v1.Secret{}
+	err := k8sClient.Get(testCtx, nsn, obj)
+	if apierrors.IsNotFound(err) {
+		return
+	}
+	assert.NoError(t, err)
+	err = k8sClient.Delete(testCtx, obj)
+	assert.NoError(t, err)
 }

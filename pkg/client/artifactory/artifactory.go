@@ -11,9 +11,9 @@ type Artifactory struct {
 }
 
 func (a *Artifactory) Read(ctx context.Context, name string, data *gst.Config) error {
-	panic("implement me")
+	panic("implement me") //TODO
 }
 
 func (a *Artifactory) Write(ctx context.Context, name string, data *gst.Config) error {
-	panic("implement me")
+	panic("implement me") //TODO
 }
